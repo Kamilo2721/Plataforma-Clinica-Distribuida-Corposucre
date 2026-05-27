@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecosistema Clínico Distribuido FHIR - Panel Avanzado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800">
+
+    <div class="max-w-7xl mx-auto p-4 md:p-6">
+        
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-5 rounded-2xl border mb-6 shadow-sm">
+            <div>
+                <h1 class="text-xl font-black text-slate-900 tracking-tight">🏥 DECENTRALIZED FHIR CLINICAL SUITE</h1>
+                <p class="text-xs text-slate-500 font-medium">Plataforma Interoperable de Alta Disponibilidad, Tolerancia a Fallos e Historias Clínicas Cohesionadas</p>
+            </div>
+            <div id="nodo-monitor" class="grid grid-cols-3 gap-2 w-full md:w-auto mt-4 md:mt-0">
+                </div>
+        </header>
+
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <span class="text-slate-400 text-[10px] font-bold uppercase block tracking-wider">Métrica 1: Total Pacientes</span>
+                <div class="flex items-baseline space-x-1.5 mt-1">
+                    <span id="metrica-total" class="text-2xl font-black text-slate-800">0</span>
+                    <span class="text-[10px] font-bold text-blue-500 uppercase">En Red FHIR</span>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <span class="text-slate-400 text-[10px] font-bold uppercase block tracking-wider">Métrica 2: Alertas Triage Crítico</span>
+                <div class="flex items-baseline space-x-1.5 mt-1">
+                    <span id="metrica-critico" class="text-2xl font-black text-red-600">0</span>
+                    <span class="text-[10px] font-bold text-red-400 uppercase">Casos I / II</span>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <span class="text-slate-400 text-[10px] font-bold uppercase block tracking-wider">Métrica 3: Carga Sincelejo</span>
+                <div class="flex items-baseline space-x-1.5 mt-1">
+                    <span id="metrica-sin" class="text-2xl font-black text-slate-700">0</span>
+                    <span class="text-[10px] font-mono text-slate-400 uppercase">Recursos</span>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <span class="text-slate-400 text-[10px] font-bold uppercase block tracking-wider">Métrica 4: Carga Medellín</span>
+                <div class="flex items-baseline space-x-1.5 mt-1">
+                    <span id="metrica-med" class="text-2xl font-black text-slate-700">0</span>
+                    <span class="text-[10px] font-mono text-slate-400 uppercase">Recursos</span>
+                </div>
+            </div>
+        </section>
+
+        <nav class="flex flex-wrap md:flex-nowrap gap-1 bg-slate-200 p-1.5 rounded-xl mb-6 text-xs md:text-sm font-bold shadow-inner">
+            <button onclick="cambiarModulo('modulo-admision')" id="btn-modulo-admision" class="tab-btn flex-1 py-3 rounded-lg text-center transition bg-blue-600 text-white shadow-sm">
+                1. Módulo Admisión
+            </button>
+            <button onclick="cambiarModulo('modulo-triage')" id="btn-modulo-triage" class="tab-btn flex-1 py-3 rounded-lg text-center transition text-slate-600 hover:bg-slate-300">
+                2. Módulo Triage
+            </button>
+            <button onclick="cambiarModulo('modulo-medico')" id="btn-modulo-medico" class="tab-btn flex-1 py-3 rounded-lg text-center transition text-slate-600 hover:bg-slate-300">
+                3. Módulo Médico
+            </button>
+            <button onclick="cambiarModulo('modulo-historia')" id="btn-modulo-historia" class="tab-btn flex-1 py-3 rounded-lg text-center transition text-slate-600 hover:bg-slate-300">
+                4. Módulo H.C. Consolidada
+            </button>
+        </nav>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <main class="lg:col-span-5 bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 min-h-[500px]">
+                
+                <div id="modulo-admision" class="modulo-panel space-y-4">
+                    <div class="border-b pb-2">
+                        <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Recurso Estándar: Patient FHIR</span>
+                        <h2 class="text-xl font-black text-slate-800">Registro de Paciente y Sede</h2>
+                    </div>
+                    <p class="text-xs text-slate-500 leading-relaxed">Generación de entidad clínica interoperable de identificación principal con asignación dinámica de clúster de base de datos distribuidos.</p>
+                    
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Identificación Única (Cédula / ID)</label>
+                        <input id="adm-pid" type="text" placeholder="Ej: 11028459" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition font-mono">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Nombre Completo del Paciente</label>
+                        <input id="adm-nombre" type="text" placeholder="Ej: Cesar Camilo Padilla" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition font-semibold">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Sede Destino Preferencial (Selección de Nodo)</label>
+                        <select id="adm-nodo" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 transition">
+                            <option value="sincelejo">Sincelejo (Nodo Principal 1)</option>
+                            <option value="medellin">Medellín (Nodo Principal 2)</option>
+                            <option value="monteria">Montería (Nodo Principal 3 / fhir_bogota)</option>
+                        </select>
+                    </div>
+                    
+                    <button onclick="ejecutarAdmision()" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-3.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md shadow-blue-200 transition active:scale-[0.99]">
+                        Crear Patient en Servidor FHIR
+                    </button>
+                </div>
+
+                <div id="modulo-triage" class="modulo-panel hidden space-y-4">
+                    <div class="border-b pb-2">
+                        <span class="text-xs font-bold text-orange-600 uppercase tracking-wider">Recurso Estándar: Observation FHIR</span>
+                        <h2 class="text-xl font-black text-slate-800">Signos Vitales y Clasificación</h2>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 text-xs text-blue-900 flex justify-between items-center shadow-xs">
+                        <div>
+                            <p class="font-extrabold uppercase text-[10px] text-blue-500">Paciente Vinculado:</p>
+                            <p id="triage-paciente-lbl" class="font-bold text-slate-700 mt-0.5">Ninguno - Vaya al Módulo de Admisión</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Frec. Cardíaca (BPM)</label>
+                            <input id="tri-fc" type="number" oninput="calcularTriageManchester()" placeholder="Ej: 82" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Temperatura (°C)</label>
+                            <input id="tri-temp" type="number" step="0.1" oninput="calcularTriageManchester()" placeholder="Ej: 36.8" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none font-bold">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Clasificación Manchester / ESI Automática</label>
+                        <div id="tri-nivel-badge" class="p-4 rounded-xl text-center font-black text-xs bg-slate-100 text-slate-400 border border-slate-200 uppercase tracking-widest">
+                            Esperando Signos Vitales...
+                        </div>
+                    </div>
+                    
+                    <button onclick="ejecutarTriage()" class="w-full bg-orange-600 hover:bg-orange-700 text-white p-3.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md shadow-orange-100 transition active:scale-[0.99]">
+                        Registrar Observation FHIR
+                    </button>
+                </div>
+
+                <div id="modulo-medico" class="modulo-panel hidden space-y-4">
+                    <div class="border-b pb-2">
+                        <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider">Recursos: Condition & MedicationRequest</span>
+                        <h2 class="text-xl font-black text-slate-800">Evolución y Acto Clínico</h2>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-[10px] bg-slate-50 p-2.5 rounded-xl border border-slate-100 font-bold">
+                        <div><span class="text-slate-400 uppercase block">Paciente:</span> <span id="med-paciente-lbl" class="text-slate-700 block font-mono truncate">N/A</span></div>
+                        <div><span class="text-slate-400 uppercase block">Gravedad:</span> <span id="med-triage-lbl" class="text-slate-700 block">N/A</span></div>
+                    </div>
+                    
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Médico Especialista Asignado de la Sede</label>
+                        <select id="med-medico" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-bold text-blue-700 outline-none">
+                            </select>
+                    </div>
+
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase block tracking-wider">Evolución Médica (Exigencia de Complejidad)</label>
+                        <button type="button" onclick="autoRellenarMedicoAleatorio()" class="text-[9px] bg-amber-500 hover:bg-amber-600 font-bold px-2.5 py-1 rounded-lg text-white shadow-xs transition active:scale-95">
+                            ⚡ Rellenar Datos Clínicos (Aleatorio)
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <textarea id="med-diag" placeholder="Haga clic en el botón naranja superior para auto-completar instantáneamente la plantilla normativa de alta complejidad..." class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-[11px] font-mono outline-none h-36 resize-none leading-relaxed"></textarea>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1 tracking-wider">Prescripción Farmacéutica (MedicationRequest)</label>
+                        <input id="med-medicamento" type="text" placeholder="Fórmula estructural de fármacos, dosis y vigencia" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-xs font-bold outline-none">
+                    </div>
+                    
+                    <button onclick="ejecutarEvolucionMedica()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white p-3.5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-md shadow-emerald-100 transition active:scale-[0.99]">
+                        Guardar Acto Médico Completo
+                    </button>
+                </div>
+
+                <div id="modulo-historia" class="modulo-panel hidden space-y-4">
+                    <div class="border-b pb-2">
+                        <span class="text-xs font-bold text-purple-600 uppercase tracking-wider">Interoperabilidad Distribuida</span>
+                        <h2 class="text-xl font-black text-slate-800">Cruce Cruzado de Nodos</h2>
+                    </div>
+                    <p class="text-xs text-slate-500 leading-relaxed">Este módulo interroga simultáneamente los repositorios independientes de las 3 sedes regionales, consolida los recursos del paciente y unifica la información médica en tiempo real.</p>
+                    
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase block tracking-wider">Cédula / Identificación a Consultar globalmente</label>
+                        <div class="flex space-x-2">
+                            <input id="hc-buscar-id" type="text" placeholder="ID del Paciente" class="flex-1 p-3 border border-slate-200 rounded-xl text-sm font-bold outline-none bg-slate-50 font-mono">
+                            <button onclick="consolidarHistoriaClinica()" class="bg-purple-600 hover:bg-purple-700 text-white px-5 rounded-xl font-bold text-xs uppercase tracking-wider shadow-xs transition active:scale-95">
+                                Cruzar Nodos
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="pt-4 border-t mt-4">
+                        <button onclick="imprimirExpediente()" class="w-full border-2 border-purple-200 text-purple-700 hover:bg-purple-50 p-3 rounded-xl font-bold text-xs uppercase tracking-wider transition flex justify-center items-center space-x-2">
+                            <span>🖨️ Exportar Resumen Clínico / Imprimir PDF</span>
+                        </button>
+                    </div>
+                </div>
+
+            </main>
+
+            <section class="lg:col-span-7 space-y-6">
+                
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 h-[290px] flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider">📦 Persistencia en Clúster Regional</h3>
+                            <p class="text-[10px] text-slate-400 font-medium">Búsquedas atómicas por Sede de Almacenamiento</p>
+                        </div>
+                        <div class="flex items-center space-x-2 bg-slate-50 px-2.5 py-1.5 rounded-xl border">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Visualizar Sede:</span>
+                            <select id="reporte-sel" onchange="cargarReporte()" class="bg-transparent font-bold text-xs text-blue-700 outline-none cursor-pointer">
+                                <option value="sincelejo">Sincelejo</option>
+                                <option value="medellin">Medellín</option>
+                                <option value="monteria">Montería</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-y-auto flex-1 text-xs">
+                        <table class="w-full text-left">
+                            <thead class="text-slate-400 font-bold uppercase tracking-wider border-b pb-2 sticky top-0 bg-white z-10 text-[9px]">
+                                <tr>
+                                    <th class="pb-2">ID Paciente</th>
+                                    <th class="pb-2 px-2">Nombre Completo</th>
+                                    <th class="pb-2 px-2">Triage / Médico</th>
+                                    <th class="pb-2 pl-2">Recursos Clínicos Guardados</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-body" class="divide-y divide-slate-100 font-semibold text-slate-700">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-col h-48">
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Carga Geográfica (Distribución de Pacientes)</h4>
+                        <div class="flex-1 min-h-0 flex justify-center items-center">
+                            <canvas id="chart-nodos"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-col h-48">
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Prevalencia Clínica (Estadística de Triage)</h4>
+                        <div class="flex-1 min-h-0 flex justify-center items-center">
+                            <canvas id="chart-triage"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+    </div>
+
+<script>
+    const API = 'http://127.0.0.1:5000';
+    let chartNodosInstance = null;
+    let chartTriageInstance = null;
+
+    // Memoria intermedia del flujo clínico unificado por pasos
+    let pacienteActual = { id: "", nombre: "", nodoSolicitado: "", triage: "No Asignado", fc: "", temp: "" };
+
+    const MEDICOS_POR_SEDE = {
+        sincelejo: [{ id: "DR-SIN-01", nombre: "Dr. Alejandro Merlano" }, { id: "DR-SIN-02", nombre: "Dra. Linda Paternina" }],
+        medellin: [{ id: "DR-MED-01", nombre: "Dr. Mateo Restrepo" }, { id: "DR-MED-02", nombre: "Dra. Sofia Uribe" }],
+        monteria: [{ id: "DR-MON-01", nombre: "Dr. Jairo Burgos" }, { id: "DR-MON-02", nombre: "Dra. Elena Flórez" }]
+    };
+
+    function cambiarModulo(idModulo) {
+        document.querySelectorAll('.modulo-panel').forEach(p => p.classList.add('hidden'));
+        document.getElementById(idModulo).classList.remove('hidden');
+        
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('bg-blue-600', 'text-white', 'shadow-sm');
+            b.classList.add('text-slate-600', 'hover:bg-slate-300');
+        });
+        const activeBtn = document.getElementById(`btn-${idModulo}`);
+        activeBtn.classList.remove('text-slate-600', 'hover:bg-slate-300');
+        activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
+    }
+
+    function calcularTriageManchester() {
+        const fc = parseInt(document.getElementById('tri-fc').value) || 0;
+        const temp = parseFloat(document.getElementById('tri-temp').value) || 0;
+        const badge = document.getElementById('tri-nivel-badge');
+
+        if(fc === 0 && temp === 0) {
+            badge.className = "p-4 rounded-xl text-center font-black text-xs bg-slate-100 text-slate-400 border border-slate-200 uppercase tracking-widest";
+            badge.innerText = "Esperando Signos Vitales...";
+            return;
+        }
+
+        // Simulación lógica de Manchester según parámetros fisiológicos ingresados
+        if(fc > 125 || temp >= 39.5 || temp < 35) {
+            badge.className = "p-4 rounded-xl text-center font-black text-xs bg-red-600 text-white shadow-md uppercase tracking-wider";
+            badge.innerText = "TRIAGE I - EMERGENCIA (CRÍTICO)";
+            pacienteActual.triage = "Triage I (Crítico)";
+        } else if(fc > 100 || temp >= 38.2) {
+            badge.className = "p-4 rounded-xl text-center font-black text-xs bg-orange-500 text-white shadow-md uppercase tracking-wider";
+            badge.innerText = "TRIAGE II - URGENCIA ALTA";
+            pacienteActual.triage = "Triage II (Urgente)";
+        } else {
+            badge.className = "p-4 rounded-xl text-center font-black text-xs bg-emerald-500 text-white shadow-md uppercase tracking-wider";
+            badge.innerText = "TRIAGE III - ESTABLE / AMBULATORIO";
+            pacienteActual.triage = "Triage III (Estable)";
+        }
+    }
+
+    // 4.1 MÓDULO ADMISIÓN - CREAR RECURSO PATIENT FHIR E IDENTIFICAR NODO
+    function ejecutarAdmision() {
+        const id = document.getElementById('adm-pid').value.trim();
+        const nombre = document.getElementById('adm-nombre').value.trim();
+        const nodo = document.getElementById('adm-nodo').value;
+
+        if(!id || !nombre) {
+            Swal.fire('Estructura Incompleta', 'Diligencie la identificación y el nombre completo.', 'warning');
+            return;
+        }
+
+        pacienteActual.id = id;
+        pacienteActual.nombre = nombre;
+        pacienteActual.nodoSolicitado = nodo;
+
+        // Propagación de datos entre pantallas
+        document.getElementById('triage-paciente-lbl').innerText = `[ID: ${id}] - ${nombre}`;
+        document.getElementById('med-paciente-lbl').innerText = `${nombre} (${id})`;
+        document.getElementById('hc-buscar-id').value = id;
+        
+        // Carga de médicos específicos regionales
+        document.getElementById('med-medico').innerHTML = MEDICOS_POR_SEDE[nodo].map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
+
+        Swal.fire({
+            title: 'Recurso Patient FHIR Instanciado',
+            html: `<p class="text-xs text-slate-500 mb-2">Entidad estructurada con identificadores geográficos únicos.</p>
+                   <pre class="text-[10px] text-left bg-slate-900 text-emerald-400 p-3 rounded-xl overflow-x-auto font-mono">{\n  "resourceType": "Patient",\n  "id": "${id}",\n  "active": true,\n  "name": [{"text": "${nombre}"}],\n  "managingOrganization": {\n    "display": "Ese Regional ${nodo.toUpperCase()}"\n  }\n}</pre>`,
+            icon: 'success',
+            confirmButtonText: 'Proceder a Triage'
+        }).then(() => {
+            cambiarModulo('modulo-triage');
+        });
+    }
+
+    // 4.2 MÓDULO TRIAGE - MAPEAR OBSERVATION FHIR
+    function ejecutarTriage() {
+        if(!pacienteActual.id) {
+            Swal.fire('Inconsistencia de Flujo', 'No hay ningún paciente activo en admisión.', 'error');
+            return;
+        }
+        pacienteActual.fc = document.getElementById('tri-fc').value;
+        pacienteActual.temp = document.getElementById('tri-temp').value;
+
+        if(!pacienteActual.fc || !pacienteActual.temp) {
+            Swal.fire('Signos Vitales Vacíos', 'Registre las constantes vitales para computar la gravedad.', 'warning');
+            return;
+        }
+
+        document.getElementById('med-triage-lbl').innerText = pacienteActual.triage;
+
+        Swal.fire({
+            title: 'Recurso Observation Mapeado',
+            html: `<p class="text-xs text-slate-500 mb-2">Signos vitales indexados de forma vinculante al ID del paciente.</p>
+                   <pre class="text-[10px] text-left bg-slate-900 text-orange-400 p-3 rounded-xl overflow-x-auto font-mono">{\n  "resourceType": "Observation",\n  "status": "final",\n  "code": { "text": "Signos Vitales Manchester" },\n  "subject": { "reference": "Patient/${pacienteActual.id}" },\n  "component": [\n    { "code": "Frecuencia Cardiaca", "valueQuantity": { "value": ${pacienteActual.fc} } },\n    { "code": "Temperatura Corporal", "valueQuantity": { "value": ${pacienteActual.temp} } }\n  ]\n}</pre>`,
+            icon: 'success',
+            confirmButtonText: 'Proceder a Evolución Médica'
+        }).then(() => {
+            cambiarModulo('modulo-medico');
+        });
+    }
+
+    // BOTÓN DE AUTO-RELLENADO EXTRA RÁPIDO PARA LA GRABACIÓN DEL VIDEO
+    function autoRellenarMedicoAleatorio() {
+        const casosClinicos = [
+            {
+                diag: `[ANAMNESIS - RESOLUCIÓN 1995 DE 1999]\n- Motivo: Cefalea holocraneana de intensidad 9/10.\n- Evolución: Paciente refiere cuadro de 16 horas acompañado de fotofobia.\n[ANTECEDENTES EXAMINADOS]\n- Familiares: Madre con antecedente de aneurisma cerebral. Patológicos: Niega.\n[EXAMEN FÍSICO DETALLADO]\n- Neurológico: Alerta, orientado en 3 esferas, sin déficit motor ni signos meningeos.\n[IMPRESIÓN DIAGNÓSTICA]\n- Principal: CIE-10: G439 (Migraña, no especificada). Tratamiento ambulatorio.`,
+                med: "Acetaminofén 500mg - Tomar 1 tableta vía oral cada 6 horas por 3 días."
+            },
+            {
+                diag: `[ANAMNESIS - RESOLUCIÓN 1995 DE 1999]\n- Motivo: Dolor abdominal agudo focalizado en fosa ilíaca derecha.\n- Evolución: Inicio súbito hace 6 horas con náuseas y alzas térmicas no cuantificadas.\n[ANTECEDENTES EXAMINADOS]\n- Quirúrgicos: Niega de importancia. Alérgicos: Niega.\n[EXAMEN FÍSICO DETALLADO]\n- Gastrointestinal: Abdomen distendido, ruidos hidroaéreos disminuidos, signo de Blumberg (+) positivo.\n[IMPRESIÓN DIAGNÓSTICA]\n- Principal: CIE-10: K359 (Apendicitis aguda, no especificada). Traslado urgente a cirugía.`,
+                med: "Lactato de Ringer 500cc - Infusión endovenosa a 125cc/hora + Nada vía oral."
+            },
+            {
+                diag: `[ANAMNESIS - RESOLUCIÓN 1995 DE 1999]\n- Motivo: Tos productiva, disnea de medianos esfuerzos y malestar general.\n- Evolución: Cuadro de 4 días de evolución con expectoración mucopurulenta verdosa.\n[ANTECEDENTES EXAMINADOS]\n- Patológicos: Asma intermitente en la infancia. Tabaquismo: Suspendido.\n[EXAMEN FÍSICO DETALLADO]\n- Respiratorio: Expansibilidad torácica disminuida, estertores crepitantes en base pulmonar derecha.\n[IMPRESIÓN DIAGNÓSTICA]\n- Principal: CIE-10: J189 (Neumonía, no especificada). Manejo antibiótico guiado.`,
+                med: "Amoxicilina 500mg caps - Tomar 1 cada 8 horas por 7 días seguidos."
+            }
+        ];
+
+        const casoAzar = casosClinicos[Math.floor(Math.random() * casosClinicos.length)];
+        document.getElementById('med-diag').value = casoAzar.diag;
+        document.getElementById('med-medicamento').value = casoAzar.med;
+    }
+
+    // 4.3 MÓDULO MÉDICO - ALMACENAR DATOS FINALES CON TOLERANCIA A FALLOS (BACKEND)
+    async function ejecutarEvolucionMedica() {
+        if(!pacienteActual.id || pacienteActual.triage === "No Asignado") {
+            Swal.fire('Inconsistencia de Secuencia', 'Complete las etapas previas de admisión y triage.', 'error');
+            return;
+        }
+
+        const medico = document.getElementById('med-medico').value;
+        const diagnostico = document.getElementById('med-diag').value.trim();
+        const medicamento = document.getElementById('med-medicamento').value.trim();
+
+        if(!diagnostico || !medicamento) {
+            Swal.fire('Campos Clínicos Vacíos', 'Diligencie el diagnóstico estructural y los medicamentos.', 'warning');
+            return;
+        }
+
+        // Empaquetado relacional compatible con el backend distribuido
+        const fhirPayload = {
+            patient_id: pacienteActual.id,
+            nombre: pacienteActual.nombre,
+            nodo: pacienteActual.nodoSolicitado,
+            triage: pacienteActual.triage,
+            medico: medico,
+            diagnostico: `[Condition: ${diagnostico}] [MedicationRequest: ${medicamento}]`
+        };
+
+        try {
+            const res = await fetch(`${API}/api/clinica/registro`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(fhirPayload)
+            });
+            const result = await res.json();
+            
+            if (res.ok) {
+                Swal.fire({
+                    title: 'Ciclo Clínico Finalizado',
+                    html: `<p class="text-xs text-slate-600 mb-2">${result.mensaje}</p>
+                           <div class="p-2 bg-slate-900 rounded-lg text-left text-[11px] font-mono text-cyan-400">
+                             <strong>Persistencia Real:</strong> fhir_${result.nodo_real === 'monteria' ? 'bogota' : result.nodo_real}
+                           </div>`,
+                    icon: 'success'
+                });
+                
+                // Actualizar inmediatamente la tabla y redirigir la vista local
+                document.getElementById('reporte-sel').value = result.nodo_real;
+                await cargarReporte();
+                
+                // Limpieza limpia de buffers de pantalla
+                document.getElementById('med-diag').value = '';
+                document.getElementById('med-medicamento').value = '';
+                document.getElementById('tri-fc').value = '';
+                document.getElementById('tri-temp').value = '';
+                calcularTriageManchester();
+            }
+        } catch (e) {
+            Swal.fire('Error de Red Distribuida', 'Imposible comunicar con el backend API Gateway.', 'error');
+        }
+    }
+
+    // 4.4 MÓDULO HISTORIA CLÍNICA CONSOLIDADA (CRUCE COMPLETO INTER-NODOS DESDE EL FRONTEND)
+    async function consolidarHistoriaClinica() {
+        const buscarId = document.getElementById('hc-buscar-id').value.trim();
+        if(!buscarId) {
+            Swal.fire('Atención', 'Ingrese la identificación del paciente a cruzar entre nodos.', 'warning');
+            return;
+        }
+
+        try {
+            // Extracción paralela distribuida de los 3 clústeres regionales independientes
+            const [sin, med, mon] = await Promise.all([
+                fetch(`${API}/api/clinica/reporte/sincelejo`).then(r => r.json()),
+                fetch(`${API}/api/clinica/reporte/medellin`).then(r => r.json()),
+                fetch(`${API}/api/clinica/reporte/monteria`).then(r => r.json())
+            ]);
+
+            // Mapeo e identificación de procedencia
+            const registrosUnificados = [
+                ...sin.filter(p => p.patient_id === buscarId).map(p => ({...p, cluster: 'Sincelejo / fhir_sincelejo'})),
+                ...med.filter(p => p.patient_id === buscarId).map(p => ({...p, cluster: 'Medellín / fhir_medellin'})),
+                ...mon.filter(p => p.patient_id === buscarId).map(p => ({...p, cluster: 'Montería / fhir_bogota'}))
+            ];
+
+            if(registrosUnificados.length === 0) {
+                Swal.fire('Expediente Vacío', 'No se encontraron registros vinculados a ese identificador en ningún nodo.', 'info');
+                return;
+            }
+
+            let htmlCronologia = `<div class="text-left space-y-3 max-h-72 overflow-y-auto text-xs font-medium">`;
+            htmlCronologia += `<p class="font-black text-sm text-slate-800">Paciente Cohesionada: <span class="text-blue-600">${registrosUnificados[0].nombre}</span></p><hr class="border-slate-100">`;
+            
+            registrosUnificados.forEach((r) => {
+                htmlCronologia += `
+                    <div class="p-3 bg-slate-50 border rounded-xl shadow-xs">
+                        <div class="flex justify-between items-center font-bold text-purple-700">
+                            <span class="text-[10px] bg-purple-100 px-2 py-0.5 rounded uppercase font-mono">${r.cluster}</span>
+                            <span class="text-slate-500 font-sans text-[10px]">${r.triage}</span>
+                        </div>
+                        <p class="text-slate-400 font-mono text-[9px] mt-1 uppercase">Especialista Responsable: ${r.medico}</p>
+                        <p class="mt-1.5 text-slate-700 font-mono text-[10px] bg-white p-2 border rounded-lg overflow-x-auto whitespace-pre-wrap">${r.diagnostico}</p>
+                    </div>`;
+            });
+            htmlCronologia += `</div>`;
+
+            Swal.fire({
+                title: 'Expediente Consolidado Inter-Nodos',
+                html: htmlCronologia,
+                icon: 'info',
+                width: '600px'
+            });
+
+        } catch (e) {
+            Swal.fire('Error Técnico', 'Fallo crítico al consultar de forma cruzada la red de datos.', 'error');
+        }
+    }
+
+    function imprimirExpediente() {
+        window.print();
+    }
+
+    // MANEJO E INFRAESTRUCTURA DE ALTA DISPONIBILIDAD (MONITOR RED Y GRÁFICAS)
+    async function cargarNodos() {
+        try {
+            const res = await fetch(`${API}/api/nodos/estado`);
+            const estados = await res.json();
+            
+            document.getElementById('nodo-monitor').innerHTML = Object.entries(estados).map(([nodo, activo]) => `
+                <div class="p-2.5 rounded-xl border flex flex-col items-center justify-center transition-all shadow-xs ${activo ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-red-200 bg-red-50 text-red-900 opacity-90'}">
+                    <span class="font-black text-[10px] uppercase tracking-wider">${nodo}</span>
+                    <button onclick="toggleNodo('${nodo}')" class="text-[9px] font-black mt-1.5 px-2 py-0.5 bg-white border border-slate-200 rounded-md shadow-2xs hover:bg-slate-50 transition tracking-tight">
+                        ${activo ? 'TUMBAR' : 'LEVANTAR'}
+                    </button>
+                </div>
+            `).join('');
+        } catch (e) { console.error("Servidor backend offline.", e); }
+    }
+
+    async function toggleNodo(nodo) {
+        await fetch(`${API}/api/nodos/estado`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({nodo}) });
+        await cargarNodos();
+    }
+
+    async function cargarReporte() {
+        const nodoSeleccionado = document.getElementById('reporte-sel').value;
+        try {
+            // Consultas simultáneas para alimentar las métricas consolidadas del Dashboard
+            const [resSin, resMed, resMon] = await Promise.all([
+                fetch(`${API}/api/clinica/reporte/sincelejo`).then(r => r.json()),
+                fetch(`${API}/api/clinica/reporte/medellin`).then(r => r.json()),
+                fetch(`${API}/api/clinica/reporte/monteria`).then(r => r.json())
+            ]);
+
+            const datosNodoActual = nodoSeleccionado === 'sincelejo' ? resSin : (nodoSeleccionado === 'medellin' ? resMed : resMon);
+            const tbody = document.getElementById('tabla-body');
+            
+            if(datosNodoActual.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="py-5 text-center text-slate-400 italic font-medium">Sin datos en esta sede regional.</td></tr>`;
+            } else {
+                tbody.innerHTML = datosNodoActual.map(r => `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="py-2.5 font-mono font-bold text-blue-600">${r.patient_id}</td>
+                        <td class="py-2.5 font-bold text-slate-800 text-[11px]">${r.nombre}</td>
+                        <td class="py-2.5"><span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100 font-extrabold text-[9px] uppercase">${r.medico}</span></td>
+                        <td class="py-2.5 text-slate-500 font-mono text-[10px] truncate max-w-[190px]" title="${r.diagnostico}">${r.diagnostico}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Cómputo de las 4 métricas operacionales del Dashboard
+            const totalPacientes = resSin.length + resMed.length + resMon.length;
+            const todosLosRegs = [...resSin, ...resMed, ...resMon];
+            const totalCriticos = todosLosRegs.filter(p => p.triage.includes("Triage I") || p.triage.includes("Triage II")).length;
+
+            document.getElementById('metrica-total').innerText = totalPacientes;
+            document.getElementById('metrica-critico').innerText = totalCriticos;
+            document.getElementById('metrica-sin').innerText = resSin.length;
+            document.getElementById('metrica-med').innerText = resMed.length;
+
+            // Actualización reactiva de los gráficos interactivas
+            actualizarGraficas(resSin.length, resMed.length, resMon.length, todosLosRegs);
+
+        } catch (e) { console.error("Error cargando repositorio distribuido.", e); }
+    }
+
+    function actualizarGraficas(cantSin, cantMed, cantMon, todos) {
+        // 1. Gráfica de Distribución Geográfica (Doughnut)
+        if (chartNodosInstance) { chartNodosInstance.destroy(); }
+        const ctxNodos = document.getElementById('chart-nodos').getContext('2d');
+        chartNodosInstance = new Chart(ctxNodos, {
+            type: 'doughnut',
+            data: {
+                labels: ['Sincelejo', 'Medellín', 'Montería'],
+                datasets: [{ data: [cantSin, cantMed, cantMon], backgroundColor: ['#2563eb', '#10b981', '#f59e0b'], borderWidth: 1 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { font: { size: 9, weight: 'bold' } } } } }
+        });
+
+        // 2. Gráfica de Casos por Triage (Bar)
+        const t1 = todos.filter(p => p.triage.includes("Triage I")).length;
+        const t2 = todos.filter(p => p.triage.includes("Triage II")).length;
+        const t3 = todos.filter(p => p.triage.includes("Triage III")).length;
+
+        if (chartTriageInstance) { chartTriageInstance.destroy(); }
+        const ctxTriage = document.getElementById('chart-triage').getContext('2d');
+        chartTriageInstance = new Chart(ctxTriage, {
+            type: 'bar',
+            data: {
+                labels: ['T-I (Crítico)', 'T-II (Urgente)', 'T-III (Estable)'],
+                datasets: [{ label: 'Casos Activos', data: [t1, t2, t3], backgroundColor: ['#ef4444', '#f97316', '#10b981'], borderRadius: 4 }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } }, 
+                scales: { 
+                    y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 8 } } }, 
+                    x: { ticks: { font: { size: 8, weight: 'bold' } } } 
+                } 
+            }
+        });
+    }
+
+    // Inicialización del ecosistema clínico
+    cargarNodos();
+    cargarReporte();
+    setInterval(cargarNodos, 4000); // Mantiene vivas las conexiones distribuidas cada 4 segundos
+</script>
+</body>
+</html>

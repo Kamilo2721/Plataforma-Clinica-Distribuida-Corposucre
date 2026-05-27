@@ -1,0 +1,51 @@
+networks:
+  red-medica:
+    driver: bridge
+
+volumes:
+  datos_db_sincelejo:
+  datos_db_medellin:
+  datos_db_bogota:
+
+services:
+  db-sincelejo:
+    image: postgres:15
+    container_name: db-sincelejo
+    environment:
+      POSTGRES_DB: fhir_sincelejo
+      POSTGRES_USER: fhir_user
+      POSTGRES_PASSWORD: fhir_password
+    volumes:
+      - datos_db_sincelejo:/var/lib/postgresql/data
+    networks:
+      - red-medica
+    ports:
+      - "5431:5432"
+
+  db-medellin:
+    image: postgres:15
+    container_name: db-medellin
+    environment:
+      POSTGRES_DB: fhir_medellin
+      POSTGRES_USER: fhir_user
+      POSTGRES_PASSWORD: fhir_password
+    volumes:
+      - datos_db_medellin:/var/lib/postgresql/data
+    networks:
+      - red-medica
+    ports:
+      - "5432:5432"
+
+  db-bogota:
+    image: postgres:15
+    container_name: db-bogota
+    environment:
+      POSTGRES_DB: fhir_bogota
+      POSTGRES_USER: fhir_user
+      POSTGRES_PASSWORD: fhir_password
+    volumes:
+      - datos_db_bogota:/var/lib/postgresql/data
+    networks:
+      - red-medica
+    ports:
+      - "5433:5432"
